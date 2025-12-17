@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { VsCodeSCMAdapter } from './adapters/primary/VsCodeSCMAdapter';
+import { CommitSidebarProvider } from './views/CommitSidebarProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Tentative d\'activation de l\'extension "commit-craft"...');
@@ -12,6 +13,12 @@ export function activate(context: vscode.ExtensionContext) {
         
         // Notification visible pour confirmer l'activation à l'utilisateur
         vscode.window.showInformationMessage('Commit Craft est actif ! Vérifiez l\'onglet Source Control (Ctrl+Shift+G).');
+
+        // Enregistrement de la vue latérale personnalisée
+        const sidebarProvider = new CommitSidebarProvider(context.extensionUri);
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(CommitSidebarProvider.viewType, sidebarProvider)
+        );
 
         // Enregistrement de la commande de génération (Bouton Generate)
         const generateDisposable = vscode.commands.registerCommand('commit-craft.generateMessage', () => {

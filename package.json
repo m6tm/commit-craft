@@ -1,7 +1,7 @@
 {
   "name": "commit-craft",
   "displayName": "Commit Craft",
-  "description": "Extension VS Code pour la gestion des commits avec une architecture hexagonale",
+  "description": "Extension VS Code pour la gestion des commits pro",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.100.0"
@@ -34,11 +34,32 @@
       "scm/title": [
         {
           "command": "commit-craft.generateMessage",
-          "group": "navigation"
+          "group": "navigation",
+          "icon": "$(sparkle)"
         },
         {
           "command": "commit-craft.commit",
-          "group": "navigation"
+          "group": "navigation",
+          "icon": "$(check)"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "commit-craft-activitybar",
+          "title": "Commit Craft",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "commit-craft-activitybar": [
+        {
+          "type": "webview",
+          "id": "commit-craft.sidebarView",
+          "name": "Commit Craft",
+          "visibility": "visible"
         }
       ]
     }
