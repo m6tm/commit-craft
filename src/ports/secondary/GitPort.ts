@@ -47,4 +47,10 @@ export interface GitPort {
     stageAll(): Promise<void>;
     unstageAll(): Promise<void>;
     discardAll(): Promise<void>;
+
+    /**
+     * Récupère le diff de tous les changements (indexés ou non).
+     * @param staged Si vrai, récupère le diff des changements indexés.
+     */
+    getAllDiffs(staged: boolean): Promise<string>;
 }

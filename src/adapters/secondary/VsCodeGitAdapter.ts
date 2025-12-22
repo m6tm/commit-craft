@@ -89,11 +89,33 @@ export class VsCodeGitAdapter implements GitPort {
         }
     }
 
+    public async getAllDiffs(staged: boolean): Promise<string> {
+        try {
+            if (!this.gitApi) return '';
+
+            let allDiffs = '';
+            for (const repo of this.gitApi.repositories) {
+                const diff = await repo.diff(staged);
+                if (diff) {
+                    allDiffs += `--- Dépôt: ${repo.rootUri.fsPath} ---\n${diff}\n\n`;
+                }
+            }
+            return allDiffs;
+        } catch (err) {
+            console.error('[CommitCraft] Erreur getAllDiffs:', err);
+            return '';
+        }
+    }
+
     public async stageFile(uriString: string): Promise<void> {
         try {
             const uri = vscode.Uri.parse(uriString);
-            // Utiliser les commandes natives de VS Code est plus robuste
-            await vscode.commands.executeCommand('git.stage', uri);
+            const repo = this.gitApi?.getRepository(uri);
+            if (repo) {
+                await repo.add([uri]);
+            } else {
+                await vscode.commands.executeCommand('git.stage', [uri]);
+            }
         } catch (err) {
             console.error('[CommitCraft] Erreur stage:', err);
         }
@@ -102,35 +124,38 @@ export class VsCodeGitAdapter implements GitPort {
     public async unstageFile(uriString: string): Promise<void> {
         try {
             const uri = vscode.Uri.parse(uriString);
-            await vscode.commands.executeCommand('git.unstage', uri);
+            const repo = this.gitApi?.getRepository(uri);
+            if (repo) {
+                await repo.revert([uri]); // L'API repo.revert sur l'index correspond au unstage
+            } else {
+                await vscode.commands.executeCommand('git.unstage', [uri]);
+            }
         } catch (err) {
             console.error('[CommitCraft] Erreur unstage:', err);
         }
     }
 
+    /**
+     * Annule les modifications d'un fichier de manière robuste.
+     */
     public async discardChanges(uriString: string): Promise<void> {
         try {
             const uri = vscode.Uri.parse(uriString);
             
-            // Pour le discard, on doit être plus précis car git.clean 
-            // et git.revert se comportent différemment
-            const extension = vscode.extensions.getExtension('vscode.git');
-            if (extension) {
-                const api = extension.exports.getAPI(1);
-                const repo = api.getRepository(uri);
+            if (this.gitApi) {
+                const repo = this.gitApi.getRepository(uri) || 
+                             this.gitApi.repositories.find((r: any) => uri.fsPath.toLowerCase().startsWith(r.rootUri.fsPath.toLowerCase()));
+                
                 if (repo) {
-                    const isUntracked = repo.state.workingTreeChanges.some((c: any) => 
-                        c.uri.toString() === uriString && c.status === 7
-                    );
-                    
-                    if (isUntracked) {
-                        await vscode.commands.executeCommand('git.clean', uri);
-                    } else {
-                        await vscode.commands.executeCommand('git.revert', uri);
-                    }
+                    // On exécute les deux pour couvrir tracked et untracked sans erreur
+                    try { await repo.clean([uri]); } catch(e) {}
+                    try { await repo.revert([uri]); } catch(e) {}
+                    return;
                 }
             }
-        } catch (err) {
+            
+            await vscode.commands.executeCommand('git.clean', uri);
+        } catch (err: any) {
             console.error('[CommitCraft] Erreur discard:', err);
         }
     }
@@ -141,9 +166,29 @@ export class VsCodeGitAdapter implements GitPort {
                 vscode.window.showWarningMessage('Veuillez saisir un message de commit.');
                 return;
             }
-            await vscode.commands.executeCommand('git.commit', { message });
-        } catch (err) {
+
+            if (!this.gitApi || this.gitApi.repositories.length === 0) {
+                vscode.window.showErrorMessage("Aucun dépôt Git détecté.");
+                return;
+            }
+
+            let committed = false;
+            for (const repo of this.gitApi.repositories) {
+                // On effectue le commit uniquement s'il y a des changements indexés
+                if (repo.state.indexChanges.length > 0) {
+                    await repo.commit(message);
+                    committed = true;
+                }
+            }
+
+            if (!committed) {
+                vscode.window.showWarningMessage("Aucun changement indexé (staged) à valider.");
+            } else {
+                vscode.window.setStatusBarMessage('Commit effectué avec succès !', 5000);
+            }
+        } catch (err: any) {
             console.error('[CommitCraft] Erreur commit:', err);
+            vscode.window.showErrorMessage(`Erreur lors du commit : ${err.message}`);
         }
     }
 
@@ -165,8 +210,6 @@ export class VsCodeGitAdapter implements GitPort {
 
     public async discardAll(): Promise<void> {
         try {
-            // git.cleanAll ou git.revertAll selon le contexte? 
-            // En général git.cleanAll gère les deux ou on peut utiliser git.discardAll (si existante)
             await vscode.commands.executeCommand('git.cleanAll');
         } catch (err) {
             console.error('[CommitCraft] Erreur discardAll:', err);

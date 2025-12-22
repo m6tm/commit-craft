@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { VsCodeSCMAdapter } from './adapters/primary/VsCodeSCMAdapter';
 import { VsCodeGitAdapter } from './adapters/secondary/VsCodeGitAdapter';
+import { OpenAiAdapter } from './adapters/secondary/OpenAiAdapter';
+import { GenerateCommitMessageUseCase } from './application/use-cases/GenerateCommitMessageUseCase';
 import { CommitSidebarProvider } from './views/CommitSidebarProvider';
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -15,12 +17,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Initialisation des adaptateurs
         const gitAdapter = new VsCodeGitAdapter();
+        const aiAdapter = new OpenAiAdapter();
         const scmAdapter = new VsCodeSCMAdapter(context, gitAdapter);
         scmAdapter.initialize();
-        console.log('Adaptateurs SCM et Git initialisés avec succès.');
+        console.log('Adaptateurs SCM, Git et IA initialisés avec succès.');
         
-        // Notification visible pour confirmer l'activation à l'utilisateur
-        vscode.window.showInformationMessage('Commit Craft est actif ! Vérifiez l\'onglet Source Control (Ctrl+Shift+G).');
+        // Initialisation des use cases
+        const generateCommitMessageUseCase = new GenerateCommitMessageUseCase(gitAdapter, aiAdapter);
 
         // Enregistrement de la vue latérale personnalisée
         const sidebarProvider = new CommitSidebarProvider(context.extensionUri, gitAdapter);
@@ -29,9 +32,20 @@ export async function activate(context: vscode.ExtensionContext) {
         );
 
         // Enregistrement de la commande de génération (Bouton Generate)
-        const generateDisposable = vscode.commands.registerCommand('commit-craft.generateMessage', () => {
-            vscode.window.showInformationMessage('Génération du message de commit...');
-            scmAdapter.setCommitMessage("feat: initial commit with hexagonal architecture");
+        const generateDisposable = vscode.commands.registerCommand('commit-craft.generateMessage', async () => {
+            try {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Génération du message de commit via l'IA...",
+                    cancellable: false
+                }, async () => {
+                    const message = await generateCommitMessageUseCase.execute();
+                    scmAdapter.setCommitMessage(message);
+                    sidebarProvider.setCommitMessage(message);
+                });
+            } catch (error: any) {
+                vscode.window.showErrorMessage(`Erreur: ${error.message}`);
+            }
         });
         
         // Enregistrement de la commande de commit

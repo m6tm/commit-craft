@@ -71,6 +71,18 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
         await vscode.window.showTextDocument(doc);
     }
 
+    /**
+     * Définit le message de commit dans la webview.
+     */
+    public setCommitMessage(message: string) {
+        if (this._view) {
+            this._view.webview.postMessage({
+                type: 'setCommitMessage',
+                message: message
+            });
+        }
+    }
+
     private async updateGitStatus() {
         if (this._view) {
             const stagedFiles = await this._gitPort.getStagedFiles();
@@ -92,6 +104,13 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
                 staged: stagedFiles.map(formatFile),
                 unstaged: unstagedFiles.map(formatFile)
             });
+
+            // Mise à jour du badge sur l'icône de l'extension
+            const totalChanges = stagedFiles.length + unstagedFiles.length;
+            this._view.badge = {
+                value: totalChanges,
+                tooltip: `${totalChanges} fichier(s) modifié(s)`
+            };
         }
     }
 
@@ -133,6 +152,11 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
                 .status-icon { font-weight: bold; font-size: 11px; width: 12px; text-align: center; }
                 .status-m { color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d); }
                 .status-u { color: var(--vscode-gitDecoration-untrackedResourceForeground, #73c991); }
+                
+                /* Accordion Styles */
+                .changes-section.collapsed .file-list { display: none; }
+                .changes-section.collapsed .chevron { transform: rotate(-90deg); }
+                .chevron { transition: transform 0.1s ease-out; }
             </style>
         </head>
         <body>
@@ -185,6 +209,13 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
                     this.style.height = (this.scrollHeight) + 'px';
                 });
 
+                document.querySelectorAll('.section-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const section = header.parentElement;
+                        section.classList.toggle('collapsed');
+                    });
+                });
+
                 document.getElementById('generate-btn').onclick = () => post('generate');
                 
                 const handleCommit = () => {
@@ -210,6 +241,10 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
                     if (event.data.type === 'updateGitStatus') {
                         updateFileList('staged', event.data.staged);
                         updateFileList('unstaged', event.data.unstaged);
+                    } else if (event.data.type === 'setCommitMessage') {
+                        textarea.value = event.data.message;
+                        textarea.style.height = '30px';
+                        textarea.style.height = (textarea.scrollHeight) + 'px';
                     }
                 });
 
