@@ -1,21 +1,29 @@
 import * as vscode from 'vscode';
 import { VsCodeSCMAdapter } from './adapters/primary/VsCodeSCMAdapter';
+import { VsCodeGitAdapter } from './adapters/secondary/VsCodeGitAdapter';
 import { CommitSidebarProvider } from './views/CommitSidebarProvider';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     console.log('Tentative d\'activation de l\'extension "commit-craft"...');
 
     try {
-        // Initialisation de l'adaptateur SCM
-        const scmAdapter = new VsCodeSCMAdapter(context);
+        // S'assurer que l'extension Git est active
+        const gitExtension = vscode.extensions.getExtension('vscode.git');
+        if (gitExtension && !gitExtension.isActive) {
+            await gitExtension.activate();
+        }
+
+        // Initialisation des adaptateurs
+        const gitAdapter = new VsCodeGitAdapter();
+        const scmAdapter = new VsCodeSCMAdapter(context, gitAdapter);
         scmAdapter.initialize();
-        console.log('Adaptateur SCM initialisé avec succès.');
+        console.log('Adaptateurs SCM et Git initialisés avec succès.');
         
         // Notification visible pour confirmer l'activation à l'utilisateur
         vscode.window.showInformationMessage('Commit Craft est actif ! Vérifiez l\'onglet Source Control (Ctrl+Shift+G).');
 
         // Enregistrement de la vue latérale personnalisée
-        const sidebarProvider = new CommitSidebarProvider(context.extensionUri);
+        const sidebarProvider = new CommitSidebarProvider(context.extensionUri, gitAdapter);
         context.subscriptions.push(
             vscode.window.registerWebviewViewProvider(CommitSidebarProvider.viewType, sidebarProvider)
         );
@@ -27,9 +35,9 @@ export function activate(context: vscode.ExtensionContext) {
         });
         
         // Enregistrement de la commande de commit
-        const commitDisposable = vscode.commands.registerCommand('commit-craft.commit', () => {
+        const commitDisposable = vscode.commands.registerCommand('commit-craft.commit', async () => {
             const message = scmAdapter.getCommitMessage();
-            vscode.window.showInformationMessage(`Commit effectué avec le message : ${message}`);
+            await gitAdapter.commit(message);
         });
 
         // Commande helloWorld par défaut (gardée pour référence)
