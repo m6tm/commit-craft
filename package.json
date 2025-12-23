@@ -6,6 +6,12 @@
   "engines": {
     "vscode": "^1.100.0"
   },
+  "publisher": "commit-craft",
+  "icon": "resources/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/votre-compte/commit-craft"
+  },
   "categories": [
     "Other"
   ],
@@ -79,12 +85,13 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "package": "pnpm dlx @vscode/vsce package"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

@@ -1,71 +1,72 @@
-# -commit README
+# Commit Craft
 
-This is the README for your extension "-commit". After writing up a brief description, we recommend including the following sections.
+![Commit Craft Logo](resources/icon.png)
 
-## Features
+**Commit Craft** est une extension VS Code puissante conçue pour simplifier et professionnaliser la gestion de vos messages de commit. En s'appuyant sur l'IA, elle vous aide à rédiger des messages clairs, structurés et conformes aux meilleures pratiques de l'industrie (Conventional Commits).
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+## Fonctionnalités
 
-For example if there is an image subfolder under your extension project workspace:
+- **Génération intelligente** : Utilisez l'IA (OpenAI) pour analyser vos changements et suggérer des messages de commit pertinents.
+- **Support des Conventional Commits** : Structurez vos messages avec des types précis (feat, fix, chore, docs, etc.).
+- **Interface intégrée** : Une vue latérale dédiée pour gérer vos commits sans quitter votre environnement de travail.
+- **Actions Git rapides** : Stage, unstage et discard directement depuis l'interface de l'extension.
+- **Raccourcis productifs** : Support de `Ctrl+Enter` pour valider vos commits rapidement.
 
-\!\[feature X\]\(images/feature-x.png\)
+## Installation
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+1. Installez l'extension via le Marketplace VS Code ou en téléchargeant le fichier `.vsix`.
+2. Assurez-vous d'avoir une clé API OpenAI valide.
 
-## Requirements
+## Configuration
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Une fois installée, configurez votre clé API OpenAI pour activer la génération automatique :
 
-## Extension Settings
+1. Ouvrez les **Paramètres** de VS Code (`Ctrl+,`).
+2. Recherchez `Commit Craft`.
+3. Entrez votre clé dans le champ `Commit Craft: OpenAI API Key`.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## Utilisation
 
-For example:
+1. Ouvrez la barre latérale **Commit Craft** depuis l'Activity Bar (icône du marteau et de l'enclume).
+2. Sélectionnez les fichiers à inclure (Stage).
+3. Cliquez sur l'icône Sparkle pour générer un message ou rédigez le vôtre.
+4. Appuyez sur le bouton **Commit** ou utilisez `Ctrl+Enter`.
 
-This extension contributes the following settings:
+## Développement et Packaging
 
-- `myExtension.enable`: Enable/disable this extension.
-- `myExtension.thing`: Set to `blah` to do something.
+Si vous souhaitez contribuer ou générer votre build :
 
-## Known Issues
+### Prérequis
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- [pnpm](https://pnpm.io/) installé sur votre machine.
+
+### Installation des dépendances
+
+```bash
+pnpm install
+```
+
+### Compilation
+
+```bash
+pnpm run compile
+```
+
+### Générer le fichier .vsix
+
+```bash
+pnpm run package
+```
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Version initiale de Commit Craft.
+- Intégration de la génération de messages via OpenAI.
+- Support de base des actions Git (Stage, Unstage, Commit).
+- Interface Sidebar moderne et responsive.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-- [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-- Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-- Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-- Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-- [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-- [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy Crafting your Commits!**
