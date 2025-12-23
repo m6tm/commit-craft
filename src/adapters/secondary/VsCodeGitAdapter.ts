@@ -107,56 +107,52 @@ export class VsCodeGitAdapter implements GitPort {
         }
     }
 
-    public async stageFile(uriString: string): Promise<void> {
+    public async stageFile(path: string): Promise<void> {
+        console.log('[CommitCraft] Command: git.stage', path);
         try {
-            const uri = vscode.Uri.parse(uriString);
-            const repo = this.gitApi?.getRepository(uri);
-            if (repo) {
-                await repo.add([uri]);
-            } else {
-                await vscode.commands.executeCommand('git.stage', [uri]);
-            }
+            await vscode.commands.executeCommand('git.stage', vscode.Uri.file(path));
         } catch (err) {
-            console.error('[CommitCraft] Erreur stage:', err);
+            console.error('[CommitCraft] Erreur stage command:', err);
         }
     }
 
-    public async unstageFile(uriString: string): Promise<void> {
+    public async unstageFile(path: string): Promise<void> {
+        console.log('[CommitCraft] Command: git.unstage', path);
         try {
-            const uri = vscode.Uri.parse(uriString);
-            const repo = this.gitApi?.getRepository(uri);
-            if (repo) {
-                await repo.revert([uri]); // L'API repo.revert sur l'index correspond au unstage
-            } else {
-                await vscode.commands.executeCommand('git.unstage', [uri]);
-            }
+            await vscode.commands.executeCommand('git.unstage', vscode.Uri.file(path));
         } catch (err) {
-            console.error('[CommitCraft] Erreur unstage:', err);
+            console.error('[CommitCraft] Erreur unstage command:', err);
         }
     }
 
     /**
-     * Annule les modifications d'un fichier de manière robuste.
+     * Annule les modifications d'un fichier (commande native VS Code).
      */
-    public async discardChanges(uriString: string): Promise<void> {
+    public async discardChanges(path: string): Promise<void> {
+        console.log('[CommitCraft] Discard changes for:', path);
         try {
-            const uri = vscode.Uri.parse(uriString);
+            const uri = vscode.Uri.file(path);
             
             if (this.gitApi) {
-                const repo = this.gitApi.getRepository(uri) || 
-                             this.gitApi.repositories.find((r: any) => uri.fsPath.toLowerCase().startsWith(r.rootUri.fsPath.toLowerCase()));
-                
-                if (repo) {
-                    // On exécute les deux pour couvrir tracked et untracked sans erreur
-                    try { await repo.clean([uri]); } catch(e) {}
-                    try { await repo.revert([uri]); } catch(e) {}
-                    return;
+                // On cherche l'objet de changement natif dans tous les repos
+                for (const repo of this.gitApi.repositories) {
+                    const change = repo.state.workingTreeChanges.find((c: any) => 
+                        c.uri.fsPath.toLowerCase() === uri.fsPath.toLowerCase()
+                    );
+                    
+                    if (change) {
+                        // Passer l'objet natif est la méthode la plus robuste
+                        await vscode.commands.executeCommand('git.clean', change);
+                        return;
+                    }
                 }
             }
-            
-            await vscode.commands.executeCommand('git.clean', uri);
+
+            // Fallback: si on ne trouve pas l'objet natif, on passe un objet mimant l'état
+            await vscode.commands.executeCommand('git.clean', { resourceUri: uri });
         } catch (err: any) {
             console.error('[CommitCraft] Erreur discard:', err);
+            vscode.window.showErrorMessage(`Erreur lors de l'annulation : ${err.message || err}`);
         }
     }
 
@@ -208,11 +204,15 @@ export class VsCodeGitAdapter implements GitPort {
         }
     }
 
+    /**
+     * Annule toutes les modifications non indexées.
+     */
     public async discardAll(): Promise<void> {
         try {
             await vscode.commands.executeCommand('git.cleanAll');
-        } catch (err) {
+        } catch (err: any) {
             console.error('[CommitCraft] Erreur discardAll:', err);
+            vscode.window.showErrorMessage(`Erreur lors de l'annulation globale : ${err.message || err}`);
         }
     }
 

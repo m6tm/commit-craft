@@ -37,25 +37,31 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
                     this.updateGitStatus();
                     break;
                 case 'openFile':
-                    this._openFile(data.uri);
+                    this._openFile(data.path);
                     break;
                 case 'stage':
-                    await this._gitPort.stageFile(data.uri);
+                    await this._gitPort.stageFile(data.path);
+                    await this.updateGitStatus();
                     break;
                 case 'unstage':
-                    await this._gitPort.unstageFile(data.uri);
+                    await this._gitPort.unstageFile(data.path);
+                    await this.updateGitStatus();
                     break;
                 case 'discard':
-                    await this._gitPort.discardChanges(data.uri);
+                    await this._gitPort.discardChanges(data.path);
+                    await this.updateGitStatus();
                     break;
                 case 'stageAll':
                     await this._gitPort.stageAll();
+                    await this.updateGitStatus();
                     break;
                 case 'unstageAll':
                     await this._gitPort.unstageAll();
+                    await this.updateGitStatus();
                     break;
                 case 'discardAll':
                     await this._gitPort.discardAll();
+                    await this.updateGitStatus();
                     break;
             }
         });
@@ -65,8 +71,8 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
         });
     }
 
-    private async _openFile(uriString: string) {
-        const uri = vscode.Uri.parse(uriString);
+    private async _openFile(path: string) {
+        const uri = vscode.Uri.file(path);
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(doc);
     }
@@ -90,12 +96,11 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
             const adapter = this._gitPort as VsCodeGitAdapter;
             
             const formatFile = (f: any) => {
-                const uri = vscode.Uri.file(f.path);
                 return {
                     name: f.path.split(/[\\/]/).pop(),
                     path: adapter.getRelativePath(f.path).split(/[\\/]/).slice(0, -1).join('/') || '.',
-                    status: f.status,
-                    uri: uri.toString() // On passe l'URI standardisée
+                    fullPath: f.path, // Chemin absolu natif
+                    status: f.status
                 };
             };
 
@@ -274,12 +279,12 @@ export class CommitSidebarProvider implements vscode.WebviewViewProvider {
                             <span class="status-icon status-\${file.status === 'untracked' ? 'u' : 'm'}">\${file.status === 'untracked' ? 'U' : 'M'}</span>
                         \`;
                         
-                        item.querySelector('.file-label').onclick = () => post('openFile', { uri: file.uri });
+                        item.querySelector('.file-label').onclick = () => post('openFile', { path: file.fullPath });
                         if (isStaged) {
-                            item.querySelector('.btn-unstage').onclick = (e) => { e.stopPropagation(); post('unstage', { uri: file.uri }); };
+                            item.querySelector('.btn-unstage').onclick = (e) => { e.stopPropagation(); post('unstage', { path: file.fullPath }); };
                         } else {
-                            item.querySelector('.btn-discard').onclick = (e) => { e.stopPropagation(); post('discard', { uri: file.uri }); };
-                            item.querySelector('.btn-stage').onclick = (e) => { e.stopPropagation(); post('stage', { uri: file.uri }); };
+                            item.querySelector('.btn-discard').onclick = (e) => { e.stopPropagation(); post('discard', { path: file.fullPath }); };
+                            item.querySelector('.btn-stage').onclick = (e) => { e.stopPropagation(); post('stage', { path: file.fullPath }); };
                         }
                         list.appendChild(item);
                     });
