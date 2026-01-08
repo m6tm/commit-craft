@@ -2,7 +2,7 @@
   "name": "commit-craft",
   "displayName": "Commit Craft",
   "description": "Extension VS Code pour la gestion des commits pro",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.100.0"
   },

@@ -37,7 +37,7 @@ export class OpenAiAdapter implements AiPort {
 
         try {
             const response = await this.client.chat.completions.create({
-                model: 'deepseek-ai/DeepSeek-V3.2',
+                model: 'gemini-2.5-flash',
                 messages: [{ role: 'user', content: prompt }],
                 temperature: 0.7,
             });
